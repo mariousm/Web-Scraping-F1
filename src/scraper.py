@@ -78,8 +78,63 @@ class Scraper():
             day = lstMonthDay[1]
             date = day.zfill(2) + "/" + self.__getMonth__(month) + "/" + str(year)
             
-
         return date
+
+    # Método que obtiene los minutos por vuelta
+    def __getTimeLap__(self, laps, time):
+        laps = int(laps)
+        lstTime = time.split(":")
+        hours = int(lstTime[0])
+        minutes = int(lstTime[1])
+        seconds = int(lstTime[2].split(".")[0])
+        miliseconds = int(lstTime[2].split(".")[1])
+
+        # Conversión a minutos
+        hours = hours * 60
+        seconds = seconds / 60
+        miliseconds = (miliseconds / 1000) / 60
+        minutes = minutes + hours + seconds + miliseconds
+
+        minLap = minutes / laps
+        minutes = int(minLap)
+        seconds = int(abs(minLap - minutes) * 60)
+        miliseconds = int(round(abs(seconds - (abs(minLap - minutes) * 60)), 3) * 1000)
+        
+        return str(minutes) + ":" + str(seconds) + "." + str(miliseconds) 
+
+    # Método que va almacenando la data según el año
+    def __getData__(self, year, link):
+        self.soup = self.__getHtml__(link)
+        eTable = self.soup.find('table')
+    
+        for eTr in eTable.select('tbody > tr'): # Nos quedamos con las filas de la tabla que contienen datos
+            lstRow = []
+
+            for eTd, i in zip(eTr.find_all('td'), range(0, len(eTr.contents))): # Recorremos las columnas de la tabla
+                # Columna Race
+                if (i == 0):
+                    lstRow.append(eTd.text)
+                # Columna Date
+                if (i == 1):
+                    sDate = eTd.text #String de la fecha con el formato Month [space] day
+                    lstRow.append(self.__getDate__(year, sDate))
+                # Columna Winner y Team
+                if (i == 2 or i == 3):
+                    nationality = eTd.find('img')['alt']
+                    winner = eTd.find_all('a')[1]['title']
+                    lstRow.append(winner)
+                    lstRow.append(nationality)
+                # Columna Laps
+                if (i == 4):
+                    laps = int(str(eTd.text))
+                    lstRow.append(laps)
+                # Columna Time
+                if (i == 5):
+                    lstRow.append(eTd.text)
+                    # Creamos una nueva columna para los tiempos por vuelta
+                    lstRow.append(self.__getTimeLap__(laps, eTd.text))
+
+            self.data.append(lstRow)
 
     # Método main para realizar el web-scraping
     def __scraping__(self):
@@ -89,24 +144,10 @@ class Scraper():
         # Obtenemos los años juntos con sus enlaces
         eTable = self.soup.find('table') #Obtenemos la primera tabla en la cual se encuentran los años por temporada
         lstYearsLinks = self.__getYearsLinks__(eTable)
-        
-        # -------------------
-        year = lstYearsLinks[0][0]
-        link = lstYearsLinks[0][1]
 
-        self.soup = self.__getHtml__(link)
-        eTable = self.soup.find('table')
-        
-        for eTr in eTable.select('tbody > tr'): # Nos quedamos con las filas de la tabla que contienen datos
-            lstRow = []
+        for yearLink in lstYearsLinks:
+            year = yearLink[0]
+            link = yearLink[1]
+            self.__getData__(year, link)
 
-            for eTd, i in zip(eTr.find_all('td'), range(0, len(eTr.contents))): # Recorremos las columnas de la tabla
-                # Si i == 0 -> Columna Race
-                if (i == 0):
-                    lstRow.append(eTd.text)
-                # Si i == 1 -> Columna Date
-                if (i == 1):
-                    sDate = eTd.text #String de la fecha con el formato Month [space] day
-                    lstRow.append(self.__getDate__(year, sDate))
-
-            print(lstRow)
+        return self.data
