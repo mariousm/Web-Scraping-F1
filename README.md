@@ -1,5 +1,7 @@
 # Web-Scraping-F1
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4647563.svg)](https://doi.org/10.5281/zenodo.4647563)
+
 ## Descripción
 
 Esta práctica se realiza como parte del Máster en Ciencia de Datos de la Universitat Oberta de Catalunya más concretamente dentro de la asignatura Tipología y ciclo de vida de los datos. El lenguaje de programación elegido para el desarrollo de la misma ha sido Python. En ella se aplican técnicas de web scraping para extraer datos de la web `f1-fansite.com` y generar un dataset con la información resultante.
