@@ -3,6 +3,7 @@ import cloudscraper
 from bs4 import BeautifulSoup
 import datetime
 import re
+import calendar
 
 # Clase encarga de extraer los datos
 class Scraper():
@@ -17,7 +18,7 @@ class Scraper():
     # https://stackoverflow.com/questions/49087990/python-request-being-blocked-by-cloudflare
     def __getHtml__(self, url):
         scraper = cloudscraper.create_scraper()
-        soup = BeautifulSoup(scraper.get(url).text)
+        soup = BeautifulSoup(scraper.get(url).text, 'html.parser')
         return soup
 
     # Obtenemos una lista de listas con el año y su enlance correspondiente dentro de la página
@@ -26,14 +27,16 @@ class Scraper():
         lstYearsLinks = []
 
         for link in html.find_all('a'):
-            lstYearsLinks.append([int(link.text), link['href']])
+            year = int(link.text)
+            if year < datetime.datetime.now().year: # Si ha acabado la temporada
+                lstYearsLinks.append([year, link['href']])
 
         return lstYearsLinks
 
     # Método que comprueba una fecha, devuevle True si es correcto el año, mes y día. False en caso contrario
     def __checkDate__(self, year, sMonthDay):
         # Comprobamos el año
-        if (year < 1950 or year >= datetime.datetime.now().year):
+        if (year < 1950 or year > datetime.datetime.now().year):
             return False
         # Comprobamos el mes y día
         if (len(sMonthDay) == 0):
@@ -43,30 +46,10 @@ class Scraper():
 
     # Método que devuelve el número del mes a partir de su nombre
     def __getMonth__(self, month):
-        if (month == "January"):
-            return "01"
-        if (month == "February"):
-            return "02"
-        if (month == "March"):
-            return "03"
-        if (month == "April"):
-            return "04"
-        if (month == "May"):
-            return "05"
-        if (month == "June"):
-            return "06"
-        if (month == "July"):
-            return "07"
-        if (month == "August"):
-            return "08"
-        if (month == "September"):
-            return "09"
-        if (month == "October"):
-            return "10"
-        if (month == "November"):
-            return "11"
-        if (month == "December"):
-            return "12"
+        monthNumber = {}
+        for i in range(1,13):
+            monthNumber[calendar.month_name[i]]=i
+        return monthNumber[month]
 
     # Método que converite una fecha de tipo Month [space] Day, al tipo Day/Month/Year
     def __getDate__(self, year, sMonthDay):
@@ -76,7 +59,7 @@ class Scraper():
             lstMonthDay = re.split(r"\s+", sMonthDay)
             month = lstMonthDay[0]
             day = lstMonthDay[1]
-            date = day.zfill(2) + "/" + self.__getMonth__(month) + "/" + str(year)
+            date = day.zfill(2) + "/" + str(self.__getMonth__(month)).zfill(2) + "/" + str(year)
             
         return date
 
@@ -111,29 +94,32 @@ class Scraper():
             lstRow = []
 
             for eTd, i in zip(eTr.find_all('td'), range(0, len(eTr.contents))): # Recorremos las columnas de la tabla
-                # Columna Race
-                if (i == 0):
-                    lstRow.append(eTd.text)
-                # Columna Date
-                if (i == 1):
-                    sDate = eTd.text #String de la fecha con el formato Month [space] day
-                    lstRow.append(self.__getDate__(year, sDate))
-                # Columna Winner y Team
-                if (i == 2 or i == 3):
-                    nationality = eTd.find('img')['alt']
-                    winner = eTd.find_all('a')[1]['title']
-                    lstRow.append(winner)
-                    lstRow.append(nationality)
-                # Columna Laps
-                if (i == 4):
-                    laps = int(str(eTd.text))
-                    lstRow.append(laps)
-                # Columna Time
-                if (i == 5):
-                    lstRow.append(eTd.text)
-                    # Creamos una nueva columna para los tiempos por vuelta
-                    lstRow.append(self.__getTimeLap__(laps, eTd.text))
-
+                if (eTd is not None):
+                    # Columna Race
+                    if (i == 0):
+                        lstRow.append(eTd.text)
+                    # Columna Date
+                    if (i == 1):
+                        sDate = eTd.text #String de la fecha con el formato Month [space] day
+                        lstRow.append(self.__getDate__(year, sDate))
+                    # Columna Winner y Team
+                    if (i == 2 or i == 3):
+                        nationality = eTd.find('img')['alt']
+                        winner = eTd.find_all('a')[1]['title']
+                        lstRow.append(winner)
+                        lstRow.append(nationality)
+                    # Columna Laps
+                    if (i == 4):
+                        laps = int(str(eTd.text))
+                        lstRow.append(laps)
+                    # Columna Time
+                    if (i == 5):
+                        lstRow.append(eTd.text)
+                        # Creamos una nueva columna para los tiempos por vuelta
+                        lstRow.append(self.__getTimeLap__(laps, eTd.text))
+                else:
+                    lstRow.append("Na")
+    
             self.data.append(lstRow)
 
     # Método main para realizar el web-scraping
