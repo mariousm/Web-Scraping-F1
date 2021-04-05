@@ -1,6 +1,6 @@
 # Web-Scraping-F1
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4647563.svg)](https://doi.org/10.5281/zenodo.4647563)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4662943.svg)](https://doi.org/10.5281/zenodo.4662943)
 
 ## Descripción
 

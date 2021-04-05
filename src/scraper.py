@@ -106,8 +106,8 @@ class Scraper():
                     if (i == 2 or i == 3):
                         nationality = eTd.find('img')['alt']
                         winner = eTd.find_all('a')[1]['title']
-                        lstRow.append(winner)
                         lstRow.append(nationality)
+                        lstRow.append(winner)
                     # Columna Laps
                     if (i == 4):
                         laps = int(str(eTd.text))
